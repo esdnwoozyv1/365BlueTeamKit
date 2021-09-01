@@ -1,2 +1,2 @@
 # 365BlueTeamKit
-PowerShell scripts for Office 365 reports and investigations
+PowerShell scripts for Office 365 reports and investigations comming soon...
