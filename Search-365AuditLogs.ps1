@@ -96,7 +96,7 @@ Search-365AuditLogs -FailedSignInStatistics
 Searches all failed sign in attempts for the past 7 days and produces report with statistics.
 
 .NOTES
-Last updated 9/5/2021 Chaim Black.
+Last updated 9/9/2021 Chaim Black.
 #>
 
 function Search-365AuditLogs {
@@ -1287,7 +1287,13 @@ function Search-365AuditLogs {
                     if ($UserGettingAccessed1) {
                         $UserGettingAccessed = (get-mailbox -Identity $UserGettingAccessed1 -ErrorAction silentlycontinue).UserPrincipalName
                     }
-                    Else {$UserGettingAccessed = ''}
+                    if ((!($UserGettingAccessed)) -and (($i.Parameters | Where-Object {$_.name -like "Identity"}).value -like "*/*")) {
+                        $UserGettingAccessed2 = (($i.Parameters | Where-Object {$_.name -like "Identity"}).value -split "/")[-1]
+                        $UserGettingAccessed = (get-mailbox -Identity $UserGettingAccessed2 -ErrorAction silentlycontinue).UserPrincipalName
+                        if (!($UserGettingAccessed)) {$UserGettingAccessed = $UserGettingAccessed2 }
+                        
+                    }
+                    if (!($UserGettingAccessed)) {$UserGettingAccessed = '' }
 
                     $AccessRights         = ($i.Parameters | Where-Object {$_.name -like "AccessRights"}).Value
                     if (!($AccessRights )) {$AccessRights = ''}
@@ -1299,7 +1305,12 @@ function Search-365AuditLogs {
                             $UserAccessing = (get-mailbox -Identity $UserAccessing1 -ErrorAction silentlycontinue).UserPrincipalName  
                         }
                     }
-                    Else {$UserAccessing = ''}                                
+                    if ((!($UserAccessing)) -and (($i.Parameters | Where-Object {$_.name -like "User"}).value -like "*/*")) {
+                        $UserAccessing2 = (($i.Parameters | Where-Object {$_.name -like "User"}).value -split "/")[-1]
+                        $UserAccessing  = (get-mailbox -Identity $UserAccessing2 -ErrorAction silentlycontinue).UserPrincipalName
+                        if (!($UserAccessing)) { $UserAccessing = $UserAccessing2}
+                    }
+                    if (!($UserAccessing)) { $UserAccessing = ''}  
                 }
 
                 [PSCustomObject]@{
