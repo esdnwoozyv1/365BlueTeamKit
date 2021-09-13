@@ -351,7 +351,7 @@ function Search-365AuditLogs {
         If ($auditdata2) {           
             $auditdata1 = $auditdata2.auditdata
 
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath $UALJSONPath
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath $UALJSONPath
             Get-ItemHash -Default -FilePath $UALJSONPath
 
             $auditdata = $auditdata1 | 
@@ -553,7 +553,7 @@ function Search-365AuditLogs {
                     Write-Host "No detection of mailbox audit log data." -ForegroundColor Green
                 }
                 Else {
-                    $MBLauditdata | ConvertTo-Json | Out-File -FilePath $MLJSONPath
+                    $MBLauditdata | ConvertTo-Json -Depth 100 | Out-File -FilePath $MLJSONPath
                     Get-ItemHash -Default -FilePath $MLJSONPath
 
                     $MLData = foreach ($i in $MBLauditdata) {
@@ -642,7 +642,7 @@ function Search-365AuditLogs {
         If ($auditdata2) {
             $auditdata1 = $auditdata2.auditdata
 
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\IP Search - $date - RawData-UAL.json"
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\IP Search - $date - RawData-UAL.json"
 
             Get-ItemHash -Default -FilePath "$OutputLocation\IP Search - $date - RawData-UAL.json"
 
@@ -766,7 +766,7 @@ function Search-365AuditLogs {
         
         If ($auditdata2) {
             $auditdata1 = $auditdata2.auditdata
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\ObjectID Search - $date - RawData-UAL.json"
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\ObjectID Search - $date - RawData-UAL.json"
 
             Get-ItemHash -Default -FilePath "$OutputLocation\ObjectID Search - $date - RawData-UAL.json"
 
@@ -853,7 +853,7 @@ function Search-365AuditLogs {
         }
         Else {
             $auditdata1 = $auditdata2.auditdata
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\Failed Sign Ins - $date - RawData-UAL.json"
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\Failed Sign Ins - $date - RawData-UAL.json"
 
             Get-ItemHash -Default -FilePath "$OutputLocation\Failed Sign Ins - $date - RawData-UAL.json"
 
@@ -934,7 +934,7 @@ function Search-365AuditLogs {
         }
 
         $auditdata1 = $auditdata2.auditdata
-        $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\Failed Sign In Statistics - $date - RawData-UAL.json"
+        $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\Failed Sign In Statistics - $date - RawData-UAL.json"
 
         Get-ItemHash -Default -FilePath "$OutputLocation\Failed Sign In Statistics - $date - RawData-UAL.json"
 
@@ -1017,7 +1017,7 @@ function Search-365AuditLogs {
     if ($Inputlog) {
         $auditdata2 = Import-Csv -Path $Inputlog
         $auditdata1 = $auditdata2.auditdata
-        $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\Audit Log - InputCSV - $date - RawData-UAL.json"
+        $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\Audit Log - InputCSV - $date - RawData-UAL.json"
 
         Get-ItemHash -Default -FilePath "$OutputLocation\Audit Log - InputCSV - $date - RawData-UAL.json"
 
@@ -1117,7 +1117,7 @@ function Search-365AuditLogs {
         }
         Else {
             $auditdata1 = $auditdata2.auditdata
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\Audit Log - Inbox Rules - $date - RawData-UAL.json"
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\Audit Log - Inbox Rules - $date - RawData-UAL.json"
 
             Get-ItemHash -Default -FilePath "$OutputLocation\Audit Log - Inbox Rules - $date - RawData-UAL.json"
 
@@ -1257,7 +1257,7 @@ function Search-365AuditLogs {
             $auditdata2 = $auditdata3 | Select-Object * -ExcludeProperty resultindex,resultcount -Unique | Sort-Object -Property creationdate -Descending
             $auditdata1 = $auditdata2.auditdata
 
-            $auditdata2 | ConvertTo-Json | Out-File -FilePath "$OutputLocation\MailboxPermissions Logs - $date - RawData-UAL.json"
+            $auditdata2 | ConvertTo-Json -Depth 100 | Out-File -FilePath "$OutputLocation\MailboxPermissions Logs - $date - RawData-UAL.json"
             
             Get-ItemHash -Default -FilePath "$OutputLocation\MailboxPermissions Logs - $date - RawData-UAL.json"
 
