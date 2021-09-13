@@ -37,7 +37,7 @@ Search-365AzureADLogs -InputLogs 'C:\data.json'
 Parses data downloaded from an Azure AD login report json file.
 
 .NOTES
-Last updated 9/6/2021 Chaim Black. Select UTC in "Show Dates" when downloading data.
+Last updated 9/12/2021 Chaim Black. Select UTC in "Show Dates" when downloading data.
 #>
 
 function Search-365AzureADLogs {
@@ -60,16 +60,13 @@ function Search-365AzureADLogs {
         [Parameter()]
         [switch]$NoCopyJSON,
         [Parameter()]
-        [string]$StartDate,
+        [DateTime]$StartDate,
         [Parameter()]
-        [string]$EndDate,
+        [DateTime]$EndDate,
         [Parameter()]
         [int]$Days
     )
 
-    #########################
-    #Mandatory and prerequisites
-    #########################
     If (!(Get-Command Import-Excel -ErrorAction SilentlyContinue)) {
         Write-Host "Missing prerequisites. Installing now..."
         Install-Module ImportExcel -Force -AllowClobber
@@ -106,68 +103,46 @@ function Search-365AzureADLogs {
         }
     }
 
+    if (!($StartDate)) {[DateTime]$StartDate = [DateTime]"1/1/1900"}
+    if (!($EndDate))   {[DateTime]$EndDate   = [DateTime]"1/1/2300"}
+
     if ($InputLogs -notlike "*.json") {
         Write-host "Failed to locate json file." -ForegroundColor Red
         Break
     }
 
     if ($InputLogs -like "*,*") {
-        $AllLogs = $InputLogs -split ','
-         
+        $AllLogs = $InputLogs -split ','         
         foreach ($Log in $AllLogs) {
-            $inputData     = $InputRawJSON | ConvertFrom-Json
-            $InputJSON     = $InputJSON + $inputData
-        }
-
-        $InputJSON    = $InputJSON | Select-Object * -Unique
-        $InputRawJSON = $InputJSON | ConvertTo-Json
-    }
-    Else {
-        $InputRawJSON = get-content $InputLogs
-        $InputJSON    = $InputRawJSON | ConvertFrom-Json 
-    }
-
-    if (!($NoCopyJSON)) {
-        $OutJsonFile = "$SaveLocation\Azure Logs - $date - RawDataAAD.json"
-        $InputRawJSON | Out-File -FilePath $OutJsonFile
-        Get-ItemHash -Default -FilePath $OutJsonFile
-    }
-
-    if ($IPAddress) {
-        $IPAddresses1 = $IPAddress -split ','
-        $Filtered =  $InputJSON | Where-Object {$_.ipAddress -in $IPAddresses1}
-        $InputJSON = $Filtered
-    }
-
-    if ($Username) {
-        $Username1 = $Username -split ','
-        $Filtered =  $InputJSON | Where-Object {$_.userPrincipalName -in $Username1}
-        $InputJSON = $Filtered
-    }
-
-    if ($Days -or $StartDate -or $EndDate) {
-        $Filtered = foreach ($Entry in $InputJSON) {
-            $Udate = [datetime]$Entry.createdDateTime
-            $startdatet = [datetime]$StartDate
-            $EndDatet = [datetime]$EndDate
-
-            $TimeData = $udate
-            
-
-            if ($TimeData -gt $startdatet -and $TimeData -lt $EndDatet) {$Entry}
+            $InputRawJSON       = get-content $Log
+            $inputData          = $InputRawJSON | ConvertFrom-Json
+            $UnfilteredData     = $UnfilteredData + $inputData
         }
     }
     Else {
-        $Filtered = $InputJSON
+        $InputRawJSON   = get-content $InputLogs
+        $UnfilteredData = $InputRawJSON | ConvertFrom-Json   
     }
 
-    $FullLogs  = foreach ($Entry in $Filtered) {
-        $CARule  = $null; $CARuleFailure  = $null; $AuthMethod = $null; $AppPassword = $null; $LegacyCAReport = $Null
+    $FullLogs  = foreach ($Entry in $UnfilteredData) {
+        $CARule   = $null; $CARuleFailure  = $null; $AuthMethod = $null; $AppPassword = $null; $LegacyCAReport = $Null
         
-        $Udate = [datetime]$Entry.createdDateTime
-        $TimeData = $udate.tostring("MM/dd/yyyy hh:mm:ss tt") 
+        $Udate    = [datetime]$Entry.createdDateTime
+        $TimeData = $udate.tostring("MM/dd/yyyy hh:mm:ss tt")
+        
+        if ($Udate -lt [datetime]$StartDate )                          {Continue}
+        if ($Udate -gt [datetime]$EndDate.AddDays(1))                  {Continue}
+        if ($UserName) {
+            $Username1 = $Username -split ','
+            if ($Entry.userPrincipalName -notin $Username1)            {Continue}
 
-        if ($entry.clientAppUsed -like "Mobile Apps and Desktop clients" -or $entry.clientAppUsed -like "Browser") {$AuthMethod = "ModernAuth"}        
+        }
+        if ($IPAddress) {
+            $IPAddresses1 = $IPAddress -split ','
+            if ($Entry.ipAddress -notin $IPAddresses1)                 {Continue}
+        }        
+        
+        if ($entry.clientAppUsed -like "Mobile Apps and Desktop clients" -or $entry.clientAppUsed -like "Browser") {$AuthMethod = "ModernAuth"}
         Else {$AuthMethod = "LegacyAuth"}
         
         if ($entry.authenticationDetails.authenticationStepResultDetail -like "MFA requirement skipped due to app password") {$AppPassword = 'True'}
@@ -220,8 +195,8 @@ function Search-365AzureADLogs {
             'City'                               = $City
             'State'                              = $State
             'Country'                            = $Country
-            'ISP'                                = $ISP                
-            'AppDisplayName'                     = $Entry.appDisplayName                
+            'ISP'                                = $ISP
+            'AppDisplayName'                     = $Entry.appDisplayName
             'ClientAPP'                          = $Entry.clientAppUsed
             'ResultStatus'                       = $Entry.authenticationDetails.succeeded -join '; '
             'AuthMethod'                         = $AuthMethod
@@ -235,7 +210,7 @@ function Search-365AzureADLogs {
             'Browser'                            = $Entry.deviceDetail.browser                
             'AuthenticationStepResultDetail'     = $Entry.authenticationDetails.authenticationStepResultDetail
             'ID'                                 = $Entry.ID
-            'UserDisplayName'                    = $Entry.userDisplayName              
+            'UserDisplayName'                    = $Entry.userDisplayName
             'UserId'                             = $Entry.userId
             'AppId'                              = $Entry.appId                
             'CorrelationId'                      = $Entry.correlationId
@@ -259,12 +234,12 @@ function Search-365AzureADLogs {
             'ServicePrincipalId'                 = $Entry.servicePrincipalId
             'MFADetail_authMethod'               = $Entry.mfaDetail.authMethod
             'MFADetail_authDetail'               = $Entry.mfaDetail.authDetail
-            'Status_ErrorCode'                   = $Entry.status.ErrorCode                
+            'Status_ErrorCode'                   = $Entry.status.ErrorCode
             'DeviceDetail_deviceId'              = $Entry.deviceDetail.deviceId
-            'DeviceDetail_displayName'           = $Entry.deviceDetail.displayName                
+            'DeviceDetail_displayName'           = $Entry.deviceDetail.displayName
             'DeviceDetail_isCompliant'           = $Entry.deviceDetail.isCompliant
             'DeviceDetail_isManaged'             = $Entry.deviceDetail.isManaged
-            'DeviceDetail_trustType'             = $Entry.deviceDetail.trustType                
+            'DeviceDetail_trustType'             = $Entry.deviceDetail.trustType
             'Location_altitude'                  = $entry.altitude
             'Location_latitude'                  = $entry.latitude
             'Location_longitude'                 = $entry.longitude
@@ -275,21 +250,31 @@ function Search-365AzureADLogs {
             'NetworkLocationDetails'                                 = $Entry.networkLocationDetails -join '; '
             'AuthenticationDetails_AuthenticationStepDateTime'       = $Entry.authenticationDetails.authenticationStepDateTime -join '; '
             'AuthenticationDetails_AuthenticationMethod'             = $Entry.authenticationDetails.authenticationMethod -join '; '
-            'AuthenticationDetails_AuthenticationMethodDetail'       = $Entry.authenticationDetails.authenticationMethodDetail  -join '; '               
+            'AuthenticationDetails_AuthenticationMethodDetail'       = $Entry.authenticationDetails.authenticationMethodDetail  -join '; '
             'AuthenticationDetails_AuthenticationStepRequirement'    = $Entry.authenticationDetails.authenticationStepRequirement -join '; '
             'AuthenticationRequirementPolicies'                      = $Entry.authenticationRequirementPolicies  -join '; '
+            'JSON'                                                   = $Entry
         }
-         
-    }
+    }    
 
     if ($FullLogs) {
+
+        $FilteredData = $FullLogs | Select-Object * -Unique | Sort-Object -Property 'Date(UTC)' -Descending
+     
+        if (!($NoCopyJSON)) {
+            $OutputRawJSONSorted = $FilteredData.json  | ConvertTo-Json -Depth 100
+            $OutJsonFile = "$SaveLocation\Azure Logs - $date - RawDataAAD.json"
+            $OutputRawJSONSorted | Set-Content -Path $OutJsonFile
+            Get-ItemHash -Default -FilePath $OutJsonFile
+        }
+
         $SaveFile = "$SaveLocation\Azure Logs - $date.xlsx"
-        $FullLogs | Export-ExcelDefault -path $SaveFile -WorksheetName "Azure AD Logs" -GetHash
+        $FullLogs | Select-Object * -ExcludeProperty json | Export-ExcelDefault -path $SaveFile -WorksheetName "Azure AD Logs" -GetHash
 
         if (!($path) -and (!($NoLaunch))) {
             Start-Process $SaveLocation
         }
-        
+
         if ($DisplayOutput) {$FullLogs}
     }
 }

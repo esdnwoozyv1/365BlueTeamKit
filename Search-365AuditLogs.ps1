@@ -96,7 +96,7 @@ Search-365AuditLogs -FailedSignInStatistics
 Searches all failed sign in attempts for the past 7 days and produces report with statistics.
 
 .NOTES
-Last updated 9/9/2021 Chaim Black.
+Last updated 9/10/2021 Chaim Black.
 #>
 
 function Search-365AuditLogs {
@@ -333,7 +333,7 @@ function Search-365AuditLogs {
 
     #########################
 
-    if ($UserName -and (!($InboxRules))) {
+    if ($UserName -and (!($InboxRules)) -and (!($MailboxPermissions))) {
         Validate-Mailbox
 
         if ($IPAddress -and (!($SkipUAL))) {
@@ -1242,9 +1242,16 @@ function Search-365AuditLogs {
     }
 
     if ($MailboxPermissions) {
-        do {
-            $auditdata3 += Search-unifiedAuditLog -SessionCommand ReturnLargeSet -SessionId $sessionid -ResultSize 5000 -StartDate $startdate -EndDate $enddate -Operations "Add-MailboxPermission"
-        }while (($auditdata3 | Measure-Object).count % 5000 -eq 0 -and ($auditdata3 | Measure-Object).count -ne 0 -and $auditdata3)
+        if ($Username) {
+            do {
+                $auditdata3 += Search-unifiedAuditLog -SessionCommand ReturnLargeSet -SessionId $sessionid -ResultSize 5000 -StartDate $startdate -EndDate $enddate -Operations "Add-MailboxPermission,Remove-MailboxPermission" -UserIds "$username" 
+            }while (($auditdata3 | Measure-Object).count % 5000 -eq 0 -and ($auditdata3 | Measure-Object).count -ne 0 -and $auditdata3)
+        }
+        Else {
+            do {
+                $auditdata3 += Search-unifiedAuditLog -SessionCommand ReturnLargeSet -SessionId $sessionid -ResultSize 5000 -StartDate $startdate -EndDate $enddate -Operations "Add-MailboxPermission,Remove-MailboxPermission"
+            }while (($auditdata3 | Measure-Object).count % 5000 -eq 0 -and ($auditdata3 | Measure-Object).count -ne 0 -and $auditdata3)
+        }
         if ($auditdata3) {
 
             $auditdata2 = $auditdata3 | Select-Object * -ExcludeProperty resultindex,resultcount -Unique | Sort-Object -Property creationdate -Descending
