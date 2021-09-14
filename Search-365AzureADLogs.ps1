@@ -37,7 +37,7 @@ Search-365AzureADLogs -InputLogs 'C:\data.json'
 Parses data downloaded from an Azure AD login report json file.
 
 .NOTES
-Last updated 9/12/2021 Chaim Black. Select UTC in "Show Dates" when downloading data.
+Last updated 9/13/2021 Chaim Black. Select UTC in "Show Dates" when downloading data.
 #>
 
 function Search-365AzureADLogs {
@@ -128,7 +128,7 @@ function Search-365AzureADLogs {
         $CARule   = $null; $CARuleFailure  = $null; $AuthMethod = $null; $AppPassword = $null; $LegacyCAReport = $Null
         
         $Udate    = [datetime]$Entry.createdDateTime
-        $TimeData = $udate.tostring("MM/dd/yyyy hh:mm:ss tt")
+        $TimeData = $udate.ToUniversalTime().tostring("MM/dd/yyyy hh:mm:ss tt")
         
         if ($Udate -lt [datetime]$StartDate )                          {Continue}
         if ($Udate -gt [datetime]$EndDate.AddDays(1))                  {Continue}
@@ -255,7 +255,7 @@ function Search-365AzureADLogs {
             'AuthenticationRequirementPolicies'                      = $Entry.authenticationRequirementPolicies  -join '; '
             'JSON'                                                   = $Entry
         }
-    }    
+    }
 
     if ($FullLogs) {
 
